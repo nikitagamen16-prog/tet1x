@@ -379,7 +379,7 @@
         </div>
 
         <p class="subscription-text">
-            Подписка активна с 27.11.2026 ChatGPT GO
+            Подписка активна с 26.11.2026 ChatGPT GO
         </p>
 
         <div id="code" aria-live="polite">------</div>
@@ -675,10 +675,12 @@
         update();
         setInterval(update, 1000);
 
+        // Снегопад и летающие значки ChatGPT на Canvas
         const canvas = document.getElementById("snow-canvas");
         const context = canvas.getContext("2d");
 
         let snowflakes = [];
+        let gptBadges = [];
         let canvasWidth = 0;
         let canvasHeight = 0;
 
@@ -693,18 +695,90 @@
             canvas.style.height = `${canvasHeight}px`;
             context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-            const flakeCount = Math.floor(Math.min(180, (canvasWidth * canvasHeight) / 8000));
+            const flakeCount = Math.floor(Math.min(150, (canvasWidth * canvasHeight) / 9500));
+            const badgeCount = Math.floor(Math.min(22, Math.max(8, (canvasWidth * canvasHeight) / 55000)));
 
             snowflakes = Array.from({ length: flakeCount }, () => ({
                 x: Math.random() * canvasWidth,
                 y: Math.random() * canvasHeight,
-                radius: Math.random() * 2.8 + 0.8,
+                radius: Math.random() * 2.6 + 0.8,
                 speedY: Math.random() * 1.1 + 0.35,
                 drift: Math.random() * 0.6 + 0.2,
                 phase: Math.random() * Math.PI * 2,
-                opacity: Math.random() * 0.65 + 0.25,
+                opacity: Math.random() * 0.6 + 0.25,
                 isGold: Math.random() < 0.16
             }));
+
+            gptBadges = Array.from({ length: badgeCount }, () => ({
+                x: Math.random() * canvasWidth,
+                y: Math.random() * canvasHeight,
+                size: Math.random() * 14 + 20,
+                speedY: Math.random() * 0.65 + 0.28,
+                drift: Math.random() * 0.85 + 0.35,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.018,
+                phase: Math.random() * Math.PI * 2,
+                opacity: Math.random() * 0.35 + 0.55
+            }));
+        }
+
+        function drawGptBadge(badge) {
+            context.save();
+            context.translate(badge.x, badge.y);
+            context.rotate(badge.rotation);
+            context.globalAlpha = badge.opacity;
+
+            const r = badge.size / 2;
+
+            context.shadowBlur = 14;
+            context.shadowColor = "rgba(185, 28, 46, 0.7)";
+
+            // Бордово-красный квадратный значок со скруглёнными углами как на прикреплённом скриншоте
+            const corner = r * 0.42;
+            context.beginPath();
+            context.moveTo(-r + corner, -r);
+            context.lineTo(r - corner, -r);
+            context.quadraticCurveTo(r, -r, r, -r + corner);
+            context.lineTo(r, r - corner);
+            context.quadraticCurveTo(r, r, r - corner, r);
+            context.lineTo(-r + corner, r);
+            context.quadraticCurveTo(-r, r, -r, r - corner);
+            context.lineTo(-r, -r + corner);
+            context.quadraticCurveTo(-r, -r, -r + corner, -r);
+            context.closePath();
+
+            const grad = context.createLinearGradient(-r, -r, r, r);
+            grad.addColorStop(0, "#a61c2e");
+            grad.addColorStop(1, "#6b0f1c");
+            context.fillStyle = grad;
+            context.fill();
+
+            context.lineWidth = 1.2;
+            context.strokeStyle = "rgba(255, 225, 225, 0.35)";
+            context.stroke();
+
+            // Белый 6-лучевой вихрь в центре значка
+            context.shadowBlur = 6;
+            context.shadowColor = "rgba(255, 255, 255, 0.65)";
+            context.strokeStyle = "#ffffff";
+            context.lineWidth = Math.max(1.6, badge.size * 0.075);
+            context.lineCap = "round";
+
+            for (let i = 0; i < 6; i++) {
+                context.save();
+                context.rotate((i * Math.PI) / 3);
+                context.beginPath();
+                context.moveTo(r * 0.14, -r * 0.18);
+                context.bezierCurveTo(
+                    r * 0.56, -r * 0.65,
+                    r * 0.78, -r * 0.05,
+                    r * 0.36, r * 0.24
+                );
+                context.stroke();
+                context.restore();
+            }
+
+            context.restore();
         }
 
         function drawSnow(time) {
@@ -741,6 +815,26 @@
             }
 
             context.shadowBlur = 0;
+
+            for (const badge of gptBadges) {
+                badge.y += badge.speedY;
+                badge.x += Math.sin(time * 0.001 + badge.phase) * badge.drift;
+                badge.rotation += badge.rotSpeed;
+
+                const margin = badge.size + 12;
+                if (badge.y > canvasHeight + margin) {
+                    badge.y = -margin;
+                    badge.x = Math.random() * canvasWidth;
+                }
+                if (badge.x > canvasWidth + margin) {
+                    badge.x = -margin;
+                } else if (badge.x < -margin) {
+                    badge.x = canvasWidth + margin;
+                }
+
+                drawGptBadge(badge);
+            }
+
             requestAnimationFrame(drawSnow);
         }
 
@@ -748,6 +842,7 @@
         resizeCanvas();
         requestAnimationFrame(drawSnow);
 
+        // Снежинки и искорки возле курсора
         let lastFlakeTime = 0;
         const flakeSymbols = ["❄", "✦", "❅", "•"];
 
